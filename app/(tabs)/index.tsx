@@ -1,75 +1,129 @@
+import React, { useRef, useState } from 'react';
 import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
+import {
+  Button,
+  Platform,
+  StyleSheet,
+  TextInput,
+  View,
+  Pressable,
+  TouchableOpacity
+} from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import CameraBottomTools from '@/components/CameraBottomTools';
+import CameraSideTools from '@/components/CameraSideTools';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+  const [textValue, setTextValue] = useState('');
+  const [showCamera, setShowCamera] = useState(false);
+  const ref = useRef<CameraView>(null);
+  const [uri, setUri] = useState<string | null>(null);
+
+  const [permission, requestPermission] = useCameraPermissions();
+
+  if (!permission) {
+    // Camera permissions are still loading.
+    return <View />;
+  }
+  const takePicture = async () => {
+    const photo = await ref.current?.takePictureAsync();
+    if (photo?.uri) {
+      setUri(photo.uri);
+    }
+  };
+  const handleText = (val: string) => {
+    setTextValue(val);
+  };
+  const handleOpenCamera = () => {
+    setShowCamera(true);
+  };
+
+  if (!permission.granted) {
+    // Camera permissions are not granted yet.
+    return (
+      <View style={styles.container}>
+        <ThemedText style={styles.message}>
+          We need your permission to show the camera
+        </ThemedText>
+        <Button onPress={requestPermission} title='grant permission' />
+      </View>
+    );
+  }
+  return showCamera ? (
+    <>
+      <CameraView style={styles.camera} />
+      <CameraSideTools setShowCamera={setShowCamera} />
+      <CameraBottomTools takePicture={takePicture} />
+    </>
+  ) : (
+    <ThemedView
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        paddingHorizontal: 10
+      }}>
+      <ThemedText style={{ marginVertical: 40 }}>Photo Vision App</ThemedText>
+      <ThemedText>
+        This a camera that can detect objects and label them into a form from a
+        picture
+      </ThemedText>
+      <ThemedText>Value populated by user or camera</ThemedText>
+
+      <ThemedView style={{ flexDirection: 'row', marginVertical: 20 }}>
+        <ThemedText style={{ marginRight: 10 }}>Input</ThemedText>
+        <TextInput
+          style={styles.input}
+          onChangeText={handleText}
+          value={textValue}
+          placeholder='Enter value here'
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
+      <ThemedText>{textValue}</ThemedText>
+      <ThemedView>
+        <Button onPress={handleOpenCamera} title='Open Camera' />
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  camera: {
+    flex: 1
+  },
+  buttonContainer: {
+    flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    backgroundColor: 'transparent',
+    margin: 64
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  button: {
+    flex: 1,
+    alignSelf: 'flex-end',
+    alignItems: 'center'
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  text: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white'
   },
+  container: {
+    flex: 1,
+    justifyContent: 'center'
+  },
+  message: {
+    textAlign: 'center',
+    paddingBottom: 10
+  },
+  input: {
+    // flex:1,
+    height: 40,
+    width: 200,
+    backgroundColor: '#488c7d',
+    // height: 40,
+    // margin: 12,
+    borderWidth: 1
+    // padding: 10,
+  }
 });
